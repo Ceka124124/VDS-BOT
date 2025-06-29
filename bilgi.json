@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mocker TeazerEngine – JS İstemci</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #0f0f23;
+      color: #ffffff;
+      font-family: system-ui, sans-serif;
+    }
+    h1 {
+      margin-top: 0;
+      color: #a64fff;
+      text-align: center;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111;
+      padding: 20px;
+      border-radius: 8px;
+      overflow: auto;
+      font-size: 14px;
+    }
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      color: #fff;
+      font-size: 24px;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>TeazerEngine API (JS Client)</h1>
+  <p id="info"></p>
+  <pre id="output">İşleniyor...</pre>
+
+  <div id="overlay" style="display:none;">Resmi Satıcı Yetkiniz Yok!</div>
+
+  <script>
+  (() => {
+    // URL parametrelerini al
+    const params = new URLSearchParams(window.location.search);
+
+    /* =========================================================
+       1) AUTH KONTROLÜ
+       ========================================================= */
+    const auth = params.get('auth') || '';
+    if (auth !== 'Mocker-TeazerEngine') {
+      document.getElementById('overlay').style.display = 'flex';
+      document.getElementById('output').style.display = 'none';
+      document.getElementById('info').textContent = '';
+      return;
+    }
+
+    /* =========================================================
+       2) Yardımcı Fonksiyonlar
+       ========================================================= */
+    function sanitize(obj) {
+      if (!obj || typeof obj !== 'object') return obj;
+      const remove = ['telegram', 'Telegram', 'author', 'Developer', 'auth', 'api_ismi'];
+      remove.forEach(k => delete obj[k]);
+      if (Array.isArray(obj.Veri)) {
+        obj.Veri.forEach(el => sanitize(el));
+      } else if (typeof obj.Veri === 'object') {
+        remove.forEach(k => delete obj.Veri[k]);
+      }
+      return obj;
+    }
+
+    function pretty(j) {
+      return JSON.stringify(j, null, 2);
+    }
+
+    /* =========================================================
+       3) SEC – Uzak API eşleme tablosu
+       ========================================================= */
+    const sec = Number(params.get('sec') || 0);
+    const base = 'https://tissue-non-nobody-checking.trycloudflare.com/';
+    const map = {
+  1: `${base}adsoyad.php?ad=${params.get('ad')}&soyad=${params.get('soyad')}`,
+  2: `${base}adsoyadil.php?ad=${params.get('ad')}&soyad=${params.get('soyad')}&il=${params.get('il')}`,
+  3: `${base}adsoyadililce.php?ad=${params.get('ad')}&soyad=${params.get('soyad')}&il=${params.get('il')}&ilce=${params.get('ilce')}`,
+  4: `${base}tc.php?tc=${params.get('tc')}`,
+  5: `${base}tcpro.php?tc=${params.get('tc')}`,
+  6: `${base}aile.php?tc=${params.get('tc')}`,
+  7: `${base}sulale.php?tc=${params.get('tc')}`,
+  8: `${base}gsmtc.php?gsm=${params.get('gsm')}`,
+  9: `${base}tcgsm.php?tc=${params.get('tc')}`,
+  10: `${base}operator.php?gsm=${params.get('gsm')}`,
+  11: `${base}tapu.php?tc=${params.get('tc')}`,
+  12: `${base}sgk.php?tc=${params.get('tc')}`,
+  13: `${base}hane.php?tc=${params.get('tc')}`,
+  14: `${base}adres.php?tc=${params.get('tc')}`,
+  15: `${base}okulno.php?tc=${params.get('tc')}`,
+  16: `${base}plaka.php?plaka=${params.get('plaka')}`,
+  17: `${base}gpt.php?question=${params.get('question')}`,
+  18: `${base}log.php?log=${params.get('log')}`,
+  19: `${base}firma.php?unvan=${params.get('unvan')}`,
+  20: `${base}papara.php?paparano=${params.get('paparano')}`
+};
+
+    const url = map[sec];
+    const info = document.getElementById('info');
+
+    if (!url) {
+      info.textContent = "Geçersiz 'sec' parametresi. 1-20 arasında olmalı.";
+      document.getElementById('output').textContent = '';
+      return;
+    }
+
+    info.textContent = `İstek URL: ${url}`;
+
+    /* =========================================================
+       4) Veri getir & temizle
+       ========================================================= */
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const cleaned = sanitize(data);
+        document.getElementById('output').textContent = pretty(cleaned);
+      })
+      .catch(err => {
+        document.getElementById('output').textContent = 'Hata: ' + err.message;
+      });
+  })();
+  </script>
+</body>
+</html>
