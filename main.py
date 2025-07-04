@@ -1,11 +1,30 @@
-import telebot, json, os, subprocess, threading, uuid
+import subprocess
+import sys
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+try:
+    import telebot
+except ImportError:
+    install("pyTelegramBotAPI")
+    import telebot
+
+import json
+import os
+import subprocess as sp
+import threading
+import uuid
 from telebot import types
 
 TOKEN = "7986443991:AAFqznq5DvdOI8lvXXRln7cQ4wMyhxAQ4ds"
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = "user.json"
 KODLAR_KLASORU = "kodlar"
-TEHLIKELI_KODLAR = ["import os"]
+TEHLIKELI_KODLAR = [""]
+
+ADMIN_ID = "7755042636"  # Admin ID
+ADMIN_REF = 999999       # Admin için başlangıç ref değeri
 
 os.makedirs(KODLAR_KLASORU, exist_ok=True)
 active_processes = {}
@@ -34,7 +53,7 @@ def get_vds_turu(ref):
 def botu_baslat(uid, bot_id, path):
     def calistir():
         try:
-            proc = subprocess.Popen(["python3", path])
+            proc = sp.Popen(["python3", path])
             active_processes[f"{uid}_{bot_id}"] = proc
             proc.wait()
         except Exception as e:
@@ -48,12 +67,14 @@ def start_cmd(message):
     args = message.text.split()
     data = load_data()
     if uid not in data:
+        is_admin = (uid == ADMIN_ID)
         data[uid] = {
-            "ref": 0,
+            "ref": ADMIN_REF if is_admin else 0,
             "bots": [],
             "active": [],
             "refby": "",
-            "username": message.from_user.username or "N/A"
+            "username": message.from_user.username or "N/A",
+            "admin": is_admin
         }
         if len(args) > 1:
             ref_uid = args[1]
@@ -61,19 +82,19 @@ def start_cmd(message):
                 data[ref_uid]["ref"] += 2
                 data[uid]["refby"] = ref_uid
         save_data(data)
-        bot.reply_to(message, """✅ Kayıt oldun, Free VDS verildi.
+        bot.reply_to(message, f"""✅ Kayıt oldun, {'Admin olarak Free VDS verildi.' if is_admin else 'Free VDS verildi.'}
 
 Komutlar:
 /vds - Yeni VDS Satın Al (Referans ile)
 /Benim - Kendi Botlarını ve ID'lerini gösterir. Aktif veya Pasif edebilirsin.
-.py Dosyası Atarak Botunu Aktif Edebilirsin!""")
+/.py Dosyası Atarak Botunu Aktif Edebilirsin!""")
     else:
         bot.reply_to(message, """✅ Zaten kayıtlısın.
 
 Komutlar:
 /vds - Yeni VDS Satın Al (Referans ile)
 /Benim - Kendi Botlarını ve ID'lerini gösterir. Aktif veya Pasif edebilirsin.
-.py Dosyası Atarak Botunu Aktif Edebilirsin!""")
+/.py Dosyası Atarak Botunu Aktif Edebilirsin!""")
 
 @bot.message_handler(commands=["vds"])
 def vds_list(message):
